@@ -274,9 +274,50 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
                             {Math.round((pageNumber / (numPages || 1)) * 100)}% Complete
                         </span>
                     </div>
-                    <button className="p-3 bg-zinc-800/50 hover:bg-white/10 rounded-2xl text-white/40 hover:text-white transition-all">
-                        <Settings size={22} strokeWidth={2.5} />
-                    </button>
+
+                    <div className="relative group/settings">
+                        <button className="p-3 bg-zinc-800/50 hover:bg-white/10 rounded-2xl text-white/40 hover:text-white transition-all peer">
+                            <Settings size={22} strokeWidth={2.5} />
+                        </button>
+
+                        {/* Settings Dropdown */}
+                        <div className="absolute bottom-full right-0 mb-4 w-64 bg-zinc-900/95 backdrop-blur-xl border border-white/5 rounded-3xl p-3 shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover/settings:opacity-100 group-hover/settings:translate-y-0 group-hover/settings:pointer-events-auto transition-all duration-300 z-50">
+                            <div className="space-y-1">
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem(storageKey, pageNumber.toString());
+                                        const btn = document.getElementById('bookmark-status');
+                                        if (btn) {
+                                            btn.innerText = 'Berhasil Ditandai!';
+                                            btn.classList.add('text-green-500');
+                                            setTimeout(() => {
+                                                btn.innerText = 'Tandai Terakhir Dibaca';
+                                                btn.classList.remove('text-green-500');
+                                            }, 2000);
+                                        }
+                                    }}
+                                    className="w-full flex items-center gap-3 p-4 hover:bg-white/5 rounded-2xl transition-colors group/item text-left"
+                                >
+                                    <div className="w-10 h-10 bg-red-600/10 rounded-xl flex items-center justify-center text-red-500 group-hover/item:bg-red-600 group-hover/item:text-white transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                    </div>
+                                    <div>
+                                        <p id="bookmark-status" className="text-sm font-black text-white/90">Tandai Terakhir Dibaca</p>
+                                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-0.5">Halaman {pageNumber}</p>
+                                    </div>
+                                </button>
+
+                                <div className="h-px bg-white/5 my-2"></div>
+
+                                <div className="p-4 bg-white/5 rounded-2xl">
+                                    <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-2 text-center">Reading Session</p>
+                                    <div className="flex items-center justify-center gap-2 text-white/90">
+                                        <span className="text-lg font-black tracking-tighter">{formatTime(readingTime)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
