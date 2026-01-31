@@ -42,6 +42,8 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
     const [loading, setLoading] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [readingTime, setReadingTime] = useState(0);
+    const [showResumePrompt, setShowResumePrompt] = useState(false);
+    const [savedPageNum, setSavedPageNum] = useState<number | null>(null);
     const bookRef = useRef<any>(null);
 
     // Persistence Key
@@ -51,14 +53,27 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
         setNumPages(numPages);
         setLoading(false);
 
-        // Restore progress
+        // Check for saved progress
         const savedPage = localStorage.getItem(storageKey);
         if (savedPage) {
             const pageNum = parseInt(savedPage);
-            if (!isNaN(pageNum) && pageNum > 0) {
-                setPageNumber(pageNum);
+            if (!isNaN(pageNum) && pageNum > 1) { // Only prompt if not on the first page
+                setSavedPageNum(pageNum);
+                setShowResumePrompt(true);
             }
         }
+    };
+
+    const handleResume = () => {
+        if (savedPageNum) {
+            setPageNumber(savedPageNum);
+            setShowResumePrompt(false);
+        }
+    };
+
+    const handleStartFresh = () => {
+        setPageNumber(1);
+        setShowResumePrompt(false);
     };
 
     // Save progress whenever page changes
@@ -174,11 +189,41 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
                 className="flex-1 relative flex justify-center bg-[#1a1a1a] p-4 md:p-10 overflow-auto custom-scrollbar items-start cursor-pointer"
                 onClick={handleLeftClick}
             >
-                <div className="min-h-full flex items-center justify-center py-10">
+                <div className="min-h-full flex items-center justify-center py-10 relative">
                     {loading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-50 bg-zinc-950">
                             <div className="w-16 h-16 border-4 border-red-900/30 border-t-red-600 rounded-full animate-spin"></div>
                             <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Optimizing Viewport...</p>
+                        </div>
+                    )}
+
+                    {showResumePrompt && !loading && (
+                        <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-md animate-in fade-in zoom-in duration-300">
+                            <div className="max-w-sm w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl text-center space-y-6">
+                                <div className="w-20 h-20 bg-red-600/20 rounded-[2rem] flex items-center justify-center mx-auto text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-white tracking-tight">Lanjutkan Membaca?</h3>
+                                    <p className="text-sm font-bold text-white/40 leading-relaxed">
+                                        Kamu terakhir membaca sampai <span className="text-white">Halaman {savedPageNum}</span>. Ingin lanjut dari sana?
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleResume(); }}
+                                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-red-900/20 active:scale-95"
+                                    >
+                                        Lanjut Membaca
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleStartFresh(); }}
+                                        className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95"
+                                    >
+                                        Mulai dari Awal
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
