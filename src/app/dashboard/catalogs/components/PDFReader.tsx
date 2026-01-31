@@ -16,8 +16,8 @@ import {
     MoreHorizontal
 } from 'lucide-react';
 
-// Path for pdf worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+// Path for pdf worker - using local file for maximum stability
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface PDFReaderProps {
     fileUrl: string;
