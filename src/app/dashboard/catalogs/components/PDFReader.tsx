@@ -12,8 +12,7 @@ import {
     Minimize,
     X,
     Loader2,
-    Settings,
-    MoreHorizontal
+    Settings
 } from 'lucide-react';
 
 // Path for pdf worker - using local file for maximum stability
@@ -111,66 +110,70 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
             </div>
 
             {/* Reading Area */}
-            <div className="flex-1 relative flex items-center justify-center bg-[#1a1a1a] p-4 md:p-10">
-                {loading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-50 bg-zinc-950">
-                        <div className="w-16 h-16 border-4 border-red-900/30 border-t-red-600 rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Optimizing Viewport...</p>
-                    </div>
-                )}
+            <div className="flex-1 relative flex justify-center bg-[#1a1a1a] p-4 md:p-10 overflow-auto custom-scrollbar items-start">
+                <div className="min-h-full flex items-center justify-center py-10">
+                    {loading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-50 bg-zinc-950">
+                            <div className="w-16 h-16 border-4 border-red-900/30 border-t-red-600 rounded-full animate-spin"></div>
+                            <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Optimizing Viewport...</p>
+                        </div>
+                    )}
 
-                <Document
-                    file={fileUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex flex-col items-center"
-                    loading={null}
-                >
-                    {/* @ts-ignore */}
-                    <HTMLFlipBook
-                        width={550 * scale}
-                        height={733 * scale}
-                        size="fixed"
-                        minWidth={315}
-                        maxWidth={1000}
-                        minHeight={400}
-                        maxHeight={1533}
-                        showCover={true}
-                        mobileScrollSupport={true}
-                        onFlip={(e) => setPageNumber(e.data + 1)}
-                        className="flip-book-shadow shadow-2xl"
-                        ref={bookRef}
+                    <Document
+                        file={fileUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        className="flex flex-col items-center"
+                        loading={null}
                     >
-                        {Array.from(new Array(numPages), (el, index) => (
-                            <PageElement key={`page_${index + 1}`}>
-                                {Math.abs(pageNumber - (index + 1)) <= 3 ? (
-                                    <Page
-                                        pageNumber={index + 1}
-                                        width={550 * scale}
-                                        renderAnnotationLayer={false}
-                                        renderTextLayer={false}
-                                        className="select-none pointer-events-none"
-                                        loading={
-                                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                                                <Loader2 size={32} className="animate-spin text-gray-200" />
+                        {/* @ts-ignore */}
+                        <HTMLFlipBook
+                            key={`book-scale-${scale}`}
+                            width={550 * scale}
+                            height={733 * scale}
+                            size="fixed"
+                            minWidth={315}
+                            maxWidth={2500}
+                            minHeight={400}
+                            maxHeight={3500}
+                            showCover={true}
+                            mobileScrollSupport={true}
+                            startPage={pageNumber - 1}
+                            onFlip={(e) => setPageNumber(e.data + 1)}
+                            className="flip-book-shadow shadow-2xl"
+                            ref={bookRef}
+                        >
+                            {Array.from(new Array(numPages), (el, index) => (
+                                <PageElement key={`page_${index + 1}`}>
+                                    {Math.abs(pageNumber - (index + 1)) <= 3 ? (
+                                        <Page
+                                            pageNumber={index + 1}
+                                            width={550 * scale}
+                                            renderAnnotationLayer={false}
+                                            renderTextLayer={false}
+                                            className="select-none pointer-events-none"
+                                            loading={
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                                    <Loader2 size={32} className="animate-spin text-gray-200" />
+                                                </div>
+                                            }
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-zinc-50 border border-zinc-100">
+                                            <div className="flex flex-col items-center gap-2 opacity-20">
+                                                <Loader2 size={24} className="animate-spin" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Halaman {index + 1}</span>
                                             </div>
-                                        }
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-zinc-50 border border-zinc-100">
-                                        <div className="flex flex-col items-center gap-2 opacity-20">
-                                            <Loader2 size={24} className="animate-spin" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Memuat Halaman {index + 1}</span>
                                         </div>
-                                    </div>
-                                )}
-                            </PageElement>
-                        ))}
-                    </HTMLFlipBook>
-                </Document>
+                                    )}
+                                </PageElement>
+                            ))}
+                        </HTMLFlipBook>
+                    </Document>
+                </div>
             </div>
 
             {/* Footer Navigation */}
-            <div className="h-24 bg-zinc-900/90 backdrop-blur-2xl border-t border-white/5 px-10 flex items-center justify-between z-10">
+            <div className="h-24 bg-zinc-900/90 backdrop-blur-2xl border-t border-white/5 px-10 flex items-center justify-between z-10 shrink-0">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
