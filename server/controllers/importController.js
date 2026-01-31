@@ -8,10 +8,10 @@ const getTemplate = (req, res) => {
     let filename = '';
 
     if (type === 'siswa') {
-        data = [['NISN', 'Nama', 'Jenis Kelamin (L/P)', 'ID Jenjang', 'ID Kelas', 'ID Jurusan']];
+        data = [['NISN', 'Nama', 'Jenis Kelamin (L/P)', 'Jenjang', 'Kelas', 'Jurusan']];
         filename = 'template_siswa.xlsx';
     } else if (type === 'guru') {
-        data = [['NIP', 'Nama', 'Jenis Kelamin (L/P)', 'ID Mapel']];
+        data = [['NIP', 'Nama', 'Jenis Kelamin (L/P)', 'Mata Pelajaran']];
         filename = 'template_guru.xlsx';
     } else {
         return res.status(400).json({ message: 'Invalid type' });
