@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# E-Library Telkom
 
-## Getting Started
+A premium digital library management system built with Next.js (Frontend) and Express.js (Backend).
 
-First, run the development server:
+## 🚀 Features
 
+- **Book Catalog Management**: Full CRUD for books with advanced filtering (Jenjang, Kurikulum, Mapel, etc.)
+- **Advanced Uploads**:
+  - Local file upload for Covers and PDF Books.
+  - **Remote Download**: Input external URLs and the server will download & store the file automatically.
+  - **Real-time Progress Indicator**: See download percentage with a sleek progress bar.
+  - **Premium Preview System**: Instant thumbnail preview for covers and file icons for PDFs using secure signed URLs.
+- **Premium UI/UX**:
+  - Modern dashboard design with glassmorphism and subtle animations.
+  - Searchable selection components with checkbox indicators.
+  - Fully responsive layout for all devices.
+- **Security**:
+  - JWT Authentication for secure API access.
+  - Role-based authorization (Superadmin, etc.).
+  - Signed URLs for unauthorized-file-viewing protection.
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Framework**: Next.js 15+ (App Router)
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Notifications**: Sonner
+
+### Backend
+- **Server**: Node.js / Express.js
+- **Database**: MySQL (using `mysql2/promise`)
+- **File Handling**: Multer & Axios (for remote download)
+- **Auth**: JsonWebToken & Bcryptjs
+
+## 📦 Getting Started
+
+### Prerequisites
+- Node.js installed
+- MySQL Server
+
+### 1. Database Setup
+Create a database named `telkom-punya` and configure your credentials in the `.env` file inside the `server` directory.
+
+### 2. Backend Setup
 ```bash
+cd server
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Frontend Setup
+```bash
+npm install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📂 Project Structure
+- `src/`: Next.js frontend source code.
+- `server/`: Express.js backend source code.
+- `public/`: Static assets and uploaded files.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 License
+This project is private and intended for Telkom internal use.

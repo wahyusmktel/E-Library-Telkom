@@ -265,26 +265,58 @@ app.get('/api/files/view', (req, res) => {
 app.post('/api/books/upload', verifyToken, verifyRole(['superadmin']), upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
     const relativePath = `public/uploads/${req.query.type === 'cover' ? 'covers' : 'books'}/${req.file.filename}`;
-    res.json({ path: relativePath });
+    res.json({
+        path: relativePath,
+        url: generateSignedUrl(relativePath)
+    });
 });
 
 app.post('/api/books/remote-download', verifyToken, verifyRole(['superadmin']), async (req, res) => {
     const { url, type } = req.body;
     if (!url) return res.status(400).json({ message: 'URL is required' });
 
+    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    const sendProgress = (data) => {
+        res.write(JSON.stringify(data) + '\n');
+    };
+
     try {
         const response = await axios({
             method: 'get',
             url: url,
-            responseType: 'stream'
+            responseType: 'stream',
+            timeout: 60000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
         });
+
+        const totalLength = parseInt(response.headers['content-length'], 10);
+        let downloadedLength = 0;
 
         const extension = path.extname(new URL(url).pathname) || (type === 'cover' ? '.jpg' : '.pdf');
         const filename = `${Date.now()}-${uuidv4()}${extension}`;
+        const uploadDir = path.join(__dirname, `public/uploads/${type === 'cover' ? 'covers' : 'books'}`);
+
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
         const relativePath = `public/uploads/${type === 'cover' ? 'covers' : 'books'}/${filename}`;
         const absolutePath = path.join(__dirname, relativePath);
 
         const writer = fs.createWriteStream(absolutePath);
+
+        response.data.on('data', (chunk) => {
+            downloadedLength += chunk.length;
+            if (totalLength) {
+                const percent = Math.round((downloadedLength / totalLength) * 100);
+                sendProgress({ type: 'progress', percent });
+            }
+        });
+
         response.data.pipe(writer);
 
         await new Promise((resolve, reject) => {
@@ -292,10 +324,16 @@ app.post('/api/books/remote-download', verifyToken, verifyRole(['superadmin']), 
             writer.on('error', reject);
         });
 
-        res.json({ path: relativePath });
+        sendProgress({
+            type: 'success',
+            path: relativePath,
+            url: generateSignedUrl(relativePath)
+        });
+        res.end();
     } catch (error) {
-        console.error('Remote download failed:', error);
-        res.status(500).json({ message: 'Remote download failed' });
+        console.error('Remote download failed:', error.message);
+        sendProgress({ type: 'error', message: error.message });
+        res.end();
     }
 });
 
@@ -318,16 +356,36 @@ app.post('/api/book-catalogs', verifyToken, verifyRole(['superadmin']), async (r
     const id = uuidv4();
     const { title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path } = req.body;
 
+    // Convert empty strings to null for foreign keys
+    const nullIfEmpty = (val) => (val === '' || val === undefined) ? null : val;
+
     try {
         await pool.query(
             `INSERT INTO book_catalogs (id, title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path, upload_by) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path, req.user.id]
+            [
+                id,
+                title,
+                nullIfEmpty(publisher),
+                nullIfEmpty(isbn),
+                nullIfEmpty(edition),
+                nullIfEmpty(author),
+                nullIfEmpty(category_id),
+                nullIfEmpty(type_id),
+                nullIfEmpty(level_id),
+                nullIfEmpty(class_id),
+                nullIfEmpty(subject_id),
+                nullIfEmpty(curriculum_id),
+                nullIfEmpty(major_id),
+                nullIfEmpty(cover_path),
+                nullIfEmpty(file_path),
+                req.user.id
+            ]
         );
         res.json({ message: 'Book catalog created', id });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Failed to create book catalog' });
+        console.error('Create book catalog error:', error);
+        res.status(500).json({ message: `Failed to create book catalog: ${error.message}` });
     }
 });
 

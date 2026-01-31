@@ -33,57 +33,83 @@ function SearchableSelect({ label, options, value, onChange, placeholder }: { la
     const filteredOptions = options.filter(o => o.name?.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <div className="space-y-3 relative">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 block">{label}</label>
+        <div className="space-y-4 relative">
+            <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 block">{label}</label>
             <div
-                className={`w-full px-5 py-3 bg-gray-50 border-2 transition-all duration-300 rounded-xl cursor-pointer flex justify-between items-center group
-                    ${isOpen ? 'bg-white border-red-500 shadow-lg shadow-red-50' : 'border-transparent hover:bg-gray-100/50'}
+                className={`w-full px-6 py-4 bg-gray-50 border-2 transition-all duration-300 rounded-[1.25rem] cursor-pointer flex justify-between items-center group
+                    ${isOpen ? 'bg-white border-red-500 shadow-xl shadow-red-50' : 'border-transparent hover:bg-gray-100/50'}
                 `}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span className={`text-sm font-bold truncate ${selectedOption ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {selectedOption ? selectedOption.name : placeholder}
-                </span>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <div className="flex flex-col">
+                    <span className={`text-sm font-black transition-colors ${selectedOption ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                        {selectedOption ? selectedOption.name : placeholder}
+                    </span>
+                    {selectedOption && <span className="text-[9px] text-red-500 font-bold uppercase tracking-tighter">Terpilih</span>}
+                </div>
+                <div className={`p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-red-500 text-white rotate-180' : 'bg-white text-gray-400 shadow-sm'}`}>
+                    <ChevronDown size={18} strokeWidth={3} />
+                </div>
             </div>
 
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-[55]" onClick={() => setIsOpen(false)}></div>
-                    <div className="absolute z-[60] left-0 right-0 top-[calc(100%+8px)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-3 border-b border-gray-50 bg-gray-50/50 flex items-center gap-2">
-                            <Search size={14} className="text-gray-400" />
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="Cari..."
-                                className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                            />
+                    <div className="absolute z-[60] left-0 right-0 top-[calc(100%+12px)] bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
+                        <div className="p-5 border-b border-gray-50 bg-gray-50/50">
+                            <div className="relative group/search">
+                                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-red-500 transition-colors" strokeWidth={3} />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Cari data..."
+                                    className="w-full pl-11 pr-4 py-3 bg-white border-2 border-gray-100 rounded-xl focus:border-red-200 focus:ring-4 focus:ring-red-50 transition-all text-sm font-bold placeholder:text-gray-300"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
                         </div>
-                        <div className="max-h-52 overflow-y-auto custom-scrollbar">
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-3">
                             {filteredOptions.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada data</div>
+                                <div className="py-12 flex flex-col items-center justify-center gap-3 opacity-40">
+                                    <Database size={32} />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">Tidak ada hasil</p>
+                                </div>
                             ) : (
-                                filteredOptions.map(opt => (
-                                    <div
-                                        key={opt.id}
-                                        className={`px-5 py-2.5 cursor-pointer flex justify-between items-center hover:bg-red-50 transition-colors
-                                            ${value === opt.id ? 'text-red-600 bg-red-50/30' : 'text-gray-600'}
-                                        `}
-                                        onClick={() => {
-                                            onChange(opt.id);
-                                            setIsOpen(false);
-                                            setSearch('');
-                                        }}
-                                    >
-                                        <span className="text-sm font-bold">{opt.name}</span>
-                                        {value === opt.id && <Check size={14} />}
-                                    </div>
-                                ))
+                                <div className="grid gap-1">
+                                    {filteredOptions.map(opt => (
+                                        <div
+                                            key={opt.id}
+                                            className={`px-4 py-3.5 rounded-xl cursor-pointer flex justify-between items-center group transition-all duration-200
+                                                ${value === opt.id ? 'bg-red-50 text-red-600' : 'hover:bg-gray-50 text-gray-600'}
+                                            `}
+                                            onClick={() => {
+                                                onChange(opt.id);
+                                                setIsOpen(false);
+                                                setSearch('');
+                                            }}
+                                        >
+                                            <span className="text-sm font-bold">{opt.name}</span>
+                                            {value === opt.id ? (
+                                                <div className="bg-red-500 text-white p-1 rounded-lg">
+                                                    <Check size={14} strokeWidth={4} />
+                                                </div>
+                                            ) : (
+                                                <div className="w-6 h-6 rounded-lg border-2 border-gray-100 group-hover:border-red-200 transition-colors" />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             )}
+                        </div>
+                        <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition-colors"
+                            >
+                                TUTUP PANEL
+                            </button>
                         </div>
                     </div>
                 </>
@@ -92,11 +118,14 @@ function SearchableSelect({ label, options, value, onChange, placeholder }: { la
     );
 }
 
-function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon }: any) {
+function FileUpload({ label, accept, maxSize, type, onUpload, value, previewUrl: initialPreviewUrl, icon: Icon }: any) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [remoteUrl, setRemoteUrl] = useState('');
     const [isRemoteMode, setIsRemoteMode] = useState(false);
+    const [progress, setProgress] = useState<number | null>(null);
+    const [localPreview, setLocalPreview] = useState<string | null>(null);
+    const [remotePreview, setRemotePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFile = async (file: File) => {
@@ -104,6 +133,12 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon 
         if (file.size > maxSize * 1024 * 1024) {
             toast.error(`File terlalu besar. Maksimal ${maxSize}MB`);
             return;
+        }
+
+        // Show local preview immediately for images
+        if (type === 'cover' && file.type.startsWith('image/')) {
+            const objectUrl = URL.createObjectURL(file);
+            setLocalPreview(objectUrl);
         }
 
         setIsUploading(true);
@@ -118,13 +153,15 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon 
             });
             const data = await res.json();
             if (res.ok) {
-                onUpload(data.path);
+                setRemotePreview(data.url);
+                onUpload(data.path, data.url);
                 toast.success('File berhasil diunggah');
             } else {
                 throw new Error(data.message);
             }
         } catch (error: any) {
             toast.error(error.message || 'Gagal mengunggah file');
+            setLocalPreview(null);
         } finally {
             setIsUploading(false);
         }
@@ -133,20 +170,56 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon 
     const handleRemoteDownload = async () => {
         if (!remoteUrl) return;
         setIsUploading(true);
+        setProgress(0);
         try {
-            const data = await apiFetch('/books/remote-download', {
+            const response = await fetch('http://localhost:5050/api/books/remote-download', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ url: remoteUrl, type })
             });
-            onUpload(data.path);
-            toast.success('File berhasil diunduh dari URL');
-            setIsRemoteMode(false);
+
+            if (!response.ok) throw new Error('Gagal menghubungi server');
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) throw new Error('Stream reader not available');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n').filter(Boolean);
+
+                for (const line of lines) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type === 'progress') {
+                            setProgress(data.percent);
+                        } else if (data.type === 'success') {
+                            setRemotePreview(data.url);
+                            onUpload(data.path, data.url);
+                            toast.success('File berhasil diunduh dari URL');
+                            setIsRemoteMode(false);
+                        } else if (data.type === 'error') {
+                            throw new Error(data.message);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing chunk:', e);
+                    }
+                }
+            }
         } catch (error: any) {
             toast.error(error.message || 'Gagal mengunduh file dari URL');
         } finally {
             setIsUploading(false);
+            setProgress(null);
         }
     };
+
+    const displayPreview = localPreview || (remotePreview ? `http://localhost:5050${remotePreview}` : (initialPreviewUrl ? `http://localhost:5050${initialPreviewUrl}` : null));
 
     return (
         <div className="space-y-4">
@@ -163,21 +236,37 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon 
             </div>
 
             {isRemoteMode ? (
-                <div className="flex gap-2">
-                    <input
-                        type="url"
-                        placeholder="https://example.com/file.pdf"
-                        className="flex-1 px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-red-100 transition-all text-sm font-bold"
-                        value={remoteUrl}
-                        onChange={(e) => setRemoteUrl(e.target.value)}
-                    />
-                    <button
-                        onClick={handleRemoteDownload}
-                        disabled={isUploading || !remoteUrl}
-                        className="px-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                        {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                    </button>
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <input
+                            type="url"
+                            placeholder="https://example.com/file.pdf"
+                            className="flex-1 px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-red-100 transition-all text-sm font-bold"
+                            value={remoteUrl}
+                            onChange={(e) => setRemoteUrl(e.target.value)}
+                        />
+                        <button
+                            onClick={handleRemoteDownload}
+                            disabled={isUploading || !remoteUrl}
+                            className="px-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                            {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                        </button>
+                    </div>
+
+                    {progress !== null && (
+                        <div className="bg-gray-100 h-2 w-full rounded-full overflow-hidden">
+                            <div
+                                className="bg-red-600 h-full transition-all duration-300 flex items-center justify-center"
+                                style={{ width: `${progress}%` }}
+                            >
+                            </div>
+                            <div className="flex justify-between mt-1 px-1">
+                                <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">Downloading...</span>
+                                <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">{progress}%</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div
@@ -191,27 +280,79 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, icon: Icon 
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <input
+                        key={value || 'file-input'}
                         type="file"
                         ref={fileInputRef}
                         className="hidden"
                         accept={accept}
-                        onChange={(e) => e.target.files && handleFile(e.target.files[0])}
+                        onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                                handleFile(e.target.files[0]);
+                            }
+                        }}
                     />
                     {isUploading ? (
-                        <Loader2 size={32} className="text-red-500 animate-spin" />
+                        <div className="flex flex-col items-center gap-4">
+                            <Loader2 size={32} className="text-red-500 animate-spin" />
+                            {progress !== null && (
+                                <div className="text-center">
+                                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Mengunduh... {progress}%</p>
+                                </div>
+                            )}
+                        </div>
                     ) : value ? (
-                        <div className="flex flex-col items-center text-green-600 gap-1">
-                            <Check size={32} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Siap Diunggah</span>
+                        <div className="w-full flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+                            {type === 'cover' ? (
+                                <div className="relative w-32 h-44 rounded-xl overflow-hidden shadow-2xl border-4 border-white bg-gray-50">
+                                    {displayPreview ? (
+                                        <img
+                                            src={displayPreview}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
+                                            <ImageIcon size={32} />
+                                            <span className="text-[8px] font-black uppercase tracking-tighter">Preview Fail</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                        <Check size={32} className="text-white drop-shadow-lg" />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-3 bg-white p-6 rounded-[1.5rem] shadow-sm border border-green-100 w-full">
+                                    <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+                                        <FileText size={24} />
+                                    </div>
+                                    <div className="text-center overflow-hidden">
+                                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">File Berhasil Disiapkan</p>
+                                        <p className="text-[10px] font-bold text-gray-400 truncate w-full px-4">{value.split('/').pop()}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpload('', ''); // Reset path and url
+                                    setLocalPreview(null);
+                                    setRemotePreview(null);
+                                }}
+                                className="px-6 py-2 bg-white border-2 border-gray-100 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-red-200 hover:text-red-500 transition-all active:scale-95 shadow-sm"
+                            >
+                                Ganti File
+                            </button>
                         </div>
                     ) : (
                         <>
-                            <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400">
+                            <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
                                 <Icon size={24} />
                             </div>
                             <div className="text-center">
-                                <p className="text-sm font-bold text-gray-600">Drag & drop atau klik</p>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">Maks {maxSize}MB</p>
+                                <p className="text-sm font-black text-gray-600 group-hover:text-gray-900 transition-colors">Drag & drop atau klik</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-1 tracking-widest">Maks {maxSize}MB</p>
                             </div>
                         </>
                     )}
@@ -603,7 +744,8 @@ export default function KatalogBukuPage() {
                                         type="cover"
                                         icon={ImageIcon}
                                         value={formData.cover_path}
-                                        onUpload={(path: string) => setFormData({ ...formData, cover_path: path })}
+                                        previewUrl={formData.cover_url}
+                                        onUpload={(path: string, url: string) => setFormData({ ...formData, cover_path: path, cover_url: url })}
                                     />
 
                                     <FileUpload
@@ -613,7 +755,8 @@ export default function KatalogBukuPage() {
                                         type="book"
                                         icon={FileText}
                                         value={formData.file_path}
-                                        onUpload={(path: string) => setFormData({ ...formData, file_path: path })}
+                                        previewUrl={formData.file_url}
+                                        onUpload={(path: string, url: string) => setFormData({ ...formData, file_path: path, file_url: url })}
                                     />
 
                                     <div className="bg-red-50/50 rounded-2xl p-6 border border-red-100 flex gap-4">

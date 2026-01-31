@@ -1,0 +1,8 @@
+﻿﻿Field	Type	Null	Key	Default	Extra
+id	char(36)	NO	PRI	NULL	
+name	varchar(255)	NO		NULL	
+category_id	char(36)	YES		NULL	
+type_id	char(36)	YES		NULL	
+description	text	YES		NULL	
+created_at	timestamp	YES		current_timestamp()	
+
