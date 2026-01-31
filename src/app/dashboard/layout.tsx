@@ -73,9 +73,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { label: 'Katalog Buku', icon: Book, href: '/dashboard/catalogs', role: 'all' },
         { label: 'Manajemen Siswa', icon: GraduationCap, href: '/dashboard/siswa', role: 'all' },
         { label: 'Manajemen Guru', icon: Users, href: '/dashboard/guru', role: 'all' },
-        { label: 'Materi Pembelajaran', icon: BookOpen, href: '/dashboard/materials', role: 'all' },
-        { label: 'Ujian Online', icon: GraduationCap, href: '/dashboard/exams', role: 'all' },
-        { label: 'Jadwal Akademik', icon: Calendar, href: '/dashboard/schedule', role: 'all' },
     ];
 
     const referenceItems = [
