@@ -349,7 +349,7 @@ export default function SiswaPage() {
                     <div className="flex items-center gap-2">
                         <button
                             disabled={pagination.page === 1}
-                            onClick={() => setPagination({ ...prev => ({ ...prev, page: prev.page - 1 }) })}
+                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                             className="w-12 h-12 flex items-center justify-center border-2 border-gray-100 rounded-2xl disabled:opacity-30 hover:bg-white hover:border-red-200 hover:text-red-500 transition-all shadow-sm"
                         >
                             <ChevronLeft size={20} strokeWidth={3} />
@@ -358,7 +358,7 @@ export default function SiswaPage() {
                             {[...Array(pagination.totalPages)].map((_, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => setPagination({ ...prev => ({ ...prev, page: i + 1 }) })}
+                                    onClick={() => setPagination(prev => ({ ...prev, page: i + 1 }))}
                                     className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${pagination.page === i + 1 ? 'bg-red-600 text-white shadow-lg shadow-red-100 scale-105' : 'text-gray-400 hover:bg-gray-50'
                                         }`}
                                 >
@@ -368,7 +368,7 @@ export default function SiswaPage() {
                         </div>
                         <button
                             disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
-                            onClick={() => setPagination({ ...prev => ({ ...prev, page: prev.page + 1 }) })}
+                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                             className="w-12 h-12 flex items-center justify-center border-2 border-gray-100 rounded-2xl disabled:opacity-30 hover:bg-white hover:border-red-200 hover:text-red-500 transition-all shadow-sm"
                         >
                             <ChevronRight size={20} strokeWidth={3} />
@@ -439,8 +439,8 @@ export default function SiswaPage() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, gender: g })}
                                                 className={`flex-1 py-4 px-6 rounded-2xl text-[12px] font-black tracking-widest transition-all shadow-sm ${formData.gender === g
-                                                        ? 'bg-red-600 text-white shadow-red-100 scale-[1.02]'
-                                                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                                    ? 'bg-red-600 text-white shadow-red-100 scale-[1.02]'
+                                                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                                                     }`}
                                             >
                                                 {g === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
