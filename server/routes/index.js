@@ -9,12 +9,14 @@ const bookRoutes = require('./bookRoutes');
 const importRoutes = require('./importRoutes');
 const referenceRoutes = require('./referenceRoutes');
 const userRoutes = require('./userRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
 
 router.use('/', authRoutes);
 router.use('/book-catalogs', bookRoutes);
 router.use('/books', bookRoutes);
 router.use('/import', importRoutes);
 router.use('/users', userRoutes);
+router.use('/dashboard', dashboardRoutes);
 router.use('/', referenceRoutes);
 
 // File viewing route (centralized)

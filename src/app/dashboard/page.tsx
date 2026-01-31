@@ -1,115 +1,208 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Users,
     BookOpen,
     GraduationCap,
-    ShieldCheck
+    ShieldCheck,
+    Library,
+    TrendingUp,
+    Clock,
+    UserPlus,
+    School,
+    ChevronRight,
+    Sparkles
 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 export default function DashboardPage() {
-    return (
-        <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Overview Dashboard</h1>
-                    <p className="text-gray-500 font-medium italic">Selamat datang kembali di <span className="text-red-600 font-bold">Telkom Schools Education Area</span>.</p>
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<any>({
+        totalStudents: 0,
+        totalTeachers: 0,
+        totalBooks: 0,
+        totalClasses: 0
+    });
+    const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const res = await apiFetch('/dashboard/stats');
+                setStats(res.stats);
+                setRecentActivities(res.recentActivities);
+            } catch (error) {
+                console.error('Failed to fetch dashboard stats', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    const statCards = [
+        { label: 'Total Siswa', value: stats.totalStudents, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', description: 'Siswa Aktif' },
+        { label: 'Total Guru', value: stats.totalTeachers, icon: GraduationCap, color: 'text-red-600', bg: 'bg-red-50', trend: '+5%', description: 'Tenaga Pengajar' },
+        { label: 'Koleksi Buku', value: stats.totalBooks, icon: Library, color: 'text-purple-600', bg: 'bg-purple-50', trend: '+24', description: 'E-Library Item' },
+        { label: 'Total Kelas', value: stats.totalClasses, icon: School, color: 'text-orange-600', bg: 'bg-orange-50', trend: 'Stabil', description: 'Rombel Aktif' },
+    ];
+
+    if (loading) {
+        return (
+            <div className="p-8 space-y-8 flex items-center justify-center min-vh-100">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 border-4 border-red-100 border-t-red-600 rounded-full animate-spin"></div>
+                    <p className="text-sm font-black text-gray-400 uppercase tracking-widest">LOADING DASHBOARD...</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 bg-white rounded-xl border border-gray-200 text-sm font-bold text-gray-600 shadow-sm transition-all hover:border-red-200">
-                        {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-8 space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            {/* Elegant Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-3 py-1 bg-red-600 text-[10px] font-black text-white rounded-full uppercase tracking-widest shadow-lg shadow-red-200">System Online</span>
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-sm shadow-green-200"></span>
                     </div>
-                    <button className="px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-all active:scale-95">
-                        Download Report
-                    </button>
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none">
+                        Overview <span className="text-red-600">Dashboard</span>
+                    </h1>
+                    <p className="text-gray-400 font-bold italic text-sm">
+                        Selamat datang kembali di ekosistem <span className="text-gray-900 not-italic font-black border-b-2 border-red-100">TS - Education Area</span>.
+                    </p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="px-6 py-4 bg-white rounded-[1.5rem] border-2 border-gray-50 flex items-center gap-3 shadow-sm">
+                        <Clock className="text-red-600" size={20} strokeWidth={3} />
+                        <span className="text-sm font-black text-gray-900 uppercase">
+                            {format(new Date(), 'dd MMMM yyyy', { locale: id })}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                    { label: 'Total Siswa', value: '12,450', icon: Users, color: 'bg-blue-600', shadow: 'shadow-blue-100', trend: '+12%' },
-                    { label: 'Kelas Aktif', value: '458', icon: SchoolIcon, color: 'bg-red-600', shadow: 'shadow-red-100', trend: '+5%' },
-                    { label: 'Rata-rata Nilai', value: '84.5', icon: GraduationCap, color: 'bg-green-600', shadow: 'shadow-green-100', trend: '+2%' },
-                    { label: 'Materi Baru', value: '12', icon: BookOpen, color: 'bg-orange-600', shadow: 'shadow-orange-100', trend: '+8%' },
-                ].map((stat, i) => (
-                    <div key={i} className={`bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl ${stat.shadow} group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden`}>
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-full -mr-12 -mt-12 group-hover:bg-red-50 transition-colors"></div>
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`${stat.color} p-3.5 rounded-2xl text-white shadow-lg shadow-current/20`}>
-                                    {stat.icon && <stat.icon size={22} />}
+            {/* Quick Statistics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {statCards.map((stat, i) => (
+                    <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-50/50 group hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                        <div className={`absolute top-0 right-0 w-32 h-32 ${stat.bg} rounded-full -mr-16 -mt-16 opacity-30 group-hover:scale-110 transition-transform duration-700`}></div>
+                        <div className="relative z-10 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <div className={`${stat.bg} ${stat.color} p-4 rounded-2xl shadow-inner`}>
+                                    <stat.icon size={28} strokeWidth={2.5} />
                                 </div>
-                                <span className="text-[10px] font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full">{stat.trend}</span>
+                                <div className="text-right">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Status</span>
+                                    <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">{stat.trend}</span>
+                                </div>
                             </div>
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{stat.label}</h3>
-                            <p className="text-3xl font-black text-gray-900 tracking-tight">{stat.value}</p>
+                            <div>
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{stat.label}</h3>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-4xl font-black text-gray-900 tracking-tighter">{stat.value.toLocaleString('id-ID')}</p>
+                                    <span className="text-[10px] font-black text-gray-300 uppercase">{stat.description}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Placeholder Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-gray-100 p-10 shadow-xl shadow-gray-100/50">
-                    <div className="flex items-center justify-between mb-10">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900">Aktivitas Terakhir</h2>
-                            <p className="text-xs font-medium text-gray-400 mt-1">Pantau perkembangan sistem secara real-time</p>
-                        </div>
-                        <button className="text-sm font-bold text-red-600 hover:text-red-700 bg-red-50/50 px-4 py-2 rounded-xl transition-all">Lihat Semua</button>
-                    </div>
-                    <div className="space-y-8">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="flex items-center gap-6 group">
-                                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all duration-300">
-                                    <ShieldCheck size={28} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-base font-bold text-gray-900 mb-0.5">Pembaharuan Sistem Keamanan</p>
-                                    <p className="text-sm font-medium text-gray-400">Protokol enkripsi data siswa telah diperbarui untuk standar 2026.</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest leading-none">2 Jam Lalu</span>
-                                </div>
+            {/* Activities & Promotions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-2 bg-white rounded-[3.5rem] border border-gray-100 p-12 shadow-2xl shadow-gray-100/50 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-600 to-transparent"></div>
+                    <div className="flex items-center justify-between mb-12">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                                <TrendingUp size={28} />
                             </div>
-                        ))}
+                            <div>
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Aktivitas Terkini</h2>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Real-time system updates</p>
+                            </div>
+                        </div>
+                        <button className="text-xs font-black text-red-600 hover:text-white hover:bg-red-600 border-2 border-red-50 px-6 py-3 rounded-2xl transition-all uppercase tracking-widest">
+                            Log Selengkapnya
+                        </button>
+                    </div>
+
+                    <div className="space-y-8">
+                        {recentActivities.length === 0 ? (
+                            <div className="py-20 text-center opacity-30 italic font-bold text-gray-400">Belum ada aktivitas baru tercatat...</div>
+                        ) : (
+                            recentActivities.map((activity, i) => (
+                                <div key={i} className="flex items-center gap-8 group cursor-pointer">
+                                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-sm ${activity.type === 'teacher' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'
+                                        }`}>
+                                        {activity.type === 'teacher' ? <GraduationCap size={30} /> : <UserPlus size={30} />}
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-black text-gray-900 uppercase tracking-tight">{activity.name}</span>
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-[0.2em] shadow-sm ${activity.type === 'teacher' ? 'bg-blue-600 text-white' : 'bg-pink-600 text-white'
+                                                }`}>
+                                                {activity.type === 'teacher' ? 'GURU BARU' : 'SISWA BARU'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-400 leading-relaxed">
+                                            {activity.type === 'teacher' ? 'Data tenaga pengajar baru telah terverifikasi.' : 'Registrasi siswa baru berhasil diproses sistem.'}
+                                        </p>
+                                    </div>
+                                    <div className="text-right hidden sm:block">
+                                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] block mb-1">timestamp</span>
+                                        <span className="text-[11px] font-black text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                                            {format(new Date(activity.created_at), 'HH:mm', { locale: id })} WIB
+                                        </span>
+                                    </div>
+                                    <ChevronRight className="text-gray-200 group-hover:text-red-600 transition-colors" size={24} strokeWidth={3} />
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-600 to-red-500 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-[-10%] right-[-10%] w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-black/10 rounded-full blur-2xl"></div>
+                <div className="space-y-10 flex flex-col">
+                    {/* Premium Card */}
+                    <div className="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-red-600/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
+                        <div className="absolute bottom-[10%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
 
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div>
-                            <div className="bg-white/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md border border-white/30 shadow-inner">
-                                <Star fill="white" size={28} />
+                        <div className="relative z-10 h-full flex flex-col justify-between space-y-12">
+                            <div>
+                                <div className="bg-white/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-10 backdrop-blur-md border border-white/10 shadow-inner">
+                                    <Sparkles className="text-red-500" size={32} strokeWidth={2.5} />
+                                </div>
+                                <h2 className="text-4xl font-black mb-6 leading-tight tracking-tighter italic">TS-E <br /><span className="text-red-600 not-italic">Premium</span></h2>
+                                <p className="text-gray-400 font-bold leading-relaxed text-sm">
+                                    Optimalkan pengelolaan instansi dengan modul analisis <span className="text-white">Big Data</span> dan integrasi monitoring real-time.
+                                </p>
                             </div>
-                            <h2 className="text-3xl font-black mb-4 leading-tight">Telkom Schools <br />Enterprise</h2>
-                            <p className="text-red-50 font-medium opacity-90 leading-relaxed text-sm">
-                                Buka akses penuh ke fitur analisis mahadata dan monitoring lingkungan sekolah terintegrasi.
-                            </p>
+                            <button className="bg-white text-gray-900 w-full py-6 rounded-[2rem] font-black text-xs shadow-2xl hover:bg-red-600 hover:text-white transition-all active:scale-95 tracking-[0.2em] uppercase">
+                                Upgrade Workspace
+                            </button>
                         </div>
-                        <button className="bg-white text-red-600 w-full py-5 rounded-3xl font-black text-sm shadow-2xl hover:bg-gray-50 transition-all active:scale-95 mt-10 tracking-widest">
-                            AKTIFKAN SEKARANG
-                        </button>
+                    </div>
+
+                    {/* Security Info */}
+                    <div className="bg-red-50 border-2 border-red-100 rounded-[3rem] p-8 flex items-center gap-6 group hover:bg-white transition-all duration-500 cursor-help">
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-red-600 shadow-xl shadow-red-100 group-hover:bg-red-600 group-hover:text-white transition-all">
+                            <ShieldCheck size={32} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest leading-none mb-1">Secure Protocol</h4>
+                            <p className="text-[10px] font-bold text-red-500/60 leading-tight uppercase tracking-tight">Data enkripsi AES-256 Aktif</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
-const SchoolIcon = ({ size }: { size: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-);
-
-const Star = ({ size, fill, className }: { size: number, fill?: string, className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill || "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-);
