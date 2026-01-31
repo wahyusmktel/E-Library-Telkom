@@ -15,8 +15,6 @@ import {
     Sparkles
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
@@ -82,7 +80,7 @@ export default function DashboardPage() {
                     <div className="px-6 py-4 bg-white rounded-[1.5rem] border-2 border-gray-50 flex items-center gap-3 shadow-sm">
                         <Clock className="text-red-600" size={20} strokeWidth={3} />
                         <span className="text-sm font-black text-gray-900 uppercase">
-                            {format(new Date(), 'dd MMMM yyyy', { locale: id })}
+                            {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                         </span>
                     </div>
                 </div>
@@ -159,7 +157,7 @@ export default function DashboardPage() {
                                     <div className="text-right hidden sm:block">
                                         <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] block mb-1">timestamp</span>
                                         <span className="text-[11px] font-black text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
-                                            {format(new Date(activity.created_at), 'HH:mm', { locale: id })} WIB
+                                            {new Date(activity.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
                                         </span>
                                     </div>
                                     <ChevronRight className="text-gray-200 group-hover:text-red-600 transition-colors" size={24} strokeWidth={3} />
