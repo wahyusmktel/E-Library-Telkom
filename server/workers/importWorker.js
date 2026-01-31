@@ -21,6 +21,9 @@ const startImportWorker = () => {
             const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
             const total = rows.length;
 
+            // Pre-fetch all majors for smart inference
+            const [allMajors] = await pool.query('SELECT id, name FROM majors');
+
             // Helper to find ID by Name
             const findIdByName = async (table, name) => {
                 if (!name) return null;
@@ -38,7 +41,20 @@ const startImportWorker = () => {
 
                         const levelId = await findIdByName('levels', row.Jenjang);
                         const classId = await findIdByName('classes', row.Kelas);
-                        const majorId = await findIdByName('majors', row.Jurusan);
+
+                        let majorId = await findIdByName('majors', row.Jurusan);
+
+                        // --- Smart Major Inference ---
+                        if (!majorId && row.Kelas) {
+                            const className = row.Kelas.toUpperCase();
+                            // Find any major name that is contained within the class name
+                            const matchedMajor = allMajors.find(m =>
+                                className.includes(m.name.toUpperCase())
+                            );
+                            if (matchedMajor) {
+                                majorId = matchedMajor.id;
+                            }
+                        }
 
                         // Upsert logic for students using NISN
                         await pool.query(
@@ -96,7 +112,7 @@ const startImportWorker = () => {
         }
     });
 
-    console.log('Import queue worker started with enhanced logic (Upsert & Name Lookup).');
+    console.log('Import queue worker started with Smart Major Inference logic.');
 };
 
 module.exports = { startImportWorker };
