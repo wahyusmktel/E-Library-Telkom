@@ -82,6 +82,7 @@ async function initDB() {
                 major_id CHAR(36),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL,
                 FOREIGN KEY (level_id) REFERENCES levels(id),
                 FOREIGN KEY (class_id) REFERENCES classes(id),
                 FOREIGN KEY (major_id) REFERENCES majors(id)
@@ -97,6 +98,7 @@ async function initDB() {
                 subject_id CHAR(36),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL,
                 FOREIGN KEY (subject_id) REFERENCES subjects(id)
             )
         `);

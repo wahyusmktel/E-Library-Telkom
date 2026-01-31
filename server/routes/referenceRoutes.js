@@ -17,7 +17,5 @@ setupReferenceRoute('classes', 'classes');
 setupReferenceRoute('subjects', 'subjects');
 setupReferenceRoute('curriculums', 'curriculums');
 setupReferenceRoute('majors', 'majors');
-setupReferenceRoute('students', 'students');
-setupReferenceRoute('teachers', 'teachers');
 
 module.exports = router;
