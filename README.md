@@ -55,6 +55,26 @@ npm install
 npm run dev
 ```
 
+### 4. Redis Setup (Required for Import)
+The Excel import feature uses **Redis** to handle background tasks. 
+
+#### **Option A: WSL2 (Recommended)**
+If you use Windows Subsystem for Linux (WSL2):
+```bash
+sudo apt update
+sudo apt install redis-server
+sudo service redis-server start
+```
+
+#### **Option B: Windows Installer (Direct)**
+1. Download **Redis for Windows** from [GitHub Releases (tporadowski)](https://github.com/tporadowski/redis/releases).
+2. Install and run `redis-server.exe`.
+
+#### **Option C: Docker**
+```bash
+docker run -d --name redis -p 6379:6379 redis
+```
+
 ## 📂 Project Structure
 - `src/`: Next.js frontend source code.
 - `server/`: Express.js backend source code.
