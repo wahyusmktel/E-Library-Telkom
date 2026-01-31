@@ -321,15 +321,41 @@ export default function GuruPage() {
                     </p>
                     <div className="flex items-center gap-2">
                         <button
-                            disabled={pagination.page === 1}
-                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                            disabled={pagination?.page === 1}
+                            onClick={() => setPagination(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
                             className="w-12 h-12 flex items-center justify-center border-2 border-gray-100 rounded-2xl disabled:opacity-30 hover:bg-white hover:border-red-200 hover:text-red-500 transition-all shadow-sm"
                         >
                             <ChevronLeft size={20} strokeWidth={3} />
                         </button>
+                        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border-2 border-gray-100 shadow-sm">
+                            {(() => {
+                                const totalPages = pagination?.totalPages || 0;
+                                const currentPage = pagination?.page || 1;
+                                let start = Math.max(1, currentPage - 1);
+                                let end = Math.min(totalPages, start + 2);
+
+                                if (end - start < 2) {
+                                    start = Math.max(1, end - 2);
+                                }
+
+                                return [...Array(totalPages > 0 ? (end - start + 1) : 0)].map((_, idx) => {
+                                    const pageNum = start + idx;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${currentPage === pageNum ? 'bg-red-600 text-white shadow-lg shadow-red-100 scale-105' : 'text-gray-400 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                });
+                            })()}
+                        </div>
                         <button
-                            disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
-                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                            disabled={pagination?.page === pagination?.totalPages || (pagination?.totalPages || 0) === 0}
+                            onClick={() => setPagination(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
                             className="w-12 h-12 flex items-center justify-center border-2 border-gray-100 rounded-2xl disabled:opacity-30 hover:bg-white hover:border-red-200 hover:text-red-500 transition-all shadow-sm"
                         >
                             <ChevronRight size={20} strokeWidth={3} />
