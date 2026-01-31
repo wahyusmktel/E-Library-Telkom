@@ -64,6 +64,15 @@ async function initDB() {
             )
         `);
 
+        // Reference Data Tables
+        await pool.query(`CREATE TABLE IF NOT EXISTS book_categories (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS book_types (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS levels (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS classes (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, level_id CHAR(36), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS subjects (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS curriculums (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS majors (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+
         // Seed superadmin
         const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', ['superadmin@telkom.co.id']);
         if (rows.length === 0) {
@@ -81,6 +90,29 @@ async function initDB() {
     }
 }
 
+// Middleware for role verification
+const verifyToken = (req, res, next) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: 'Invalid token' });
+    }
+};
+
+const verifyRole = (roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'Forbidden: Access denied' });
+        }
+        next();
+    };
+};
+
 // Routes
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
@@ -88,14 +120,14 @@ app.post('/api/login', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (rows.length === 0) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Email atau password salah.' });
         }
 
         const user = rows[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Email atau password salah.' });
         }
 
         const token = jwt.sign(
@@ -126,16 +158,9 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.get('/api/me', async (req, res) => {
-    const token = req.cookies.token;
-
-    if (!token) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
+app.get('/api/me', verifyToken, async (req, res) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const [rows] = await pool.query('SELECT id, name, email, role FROM users WHERE id = ?', [decoded.id]);
+        const [rows] = await pool.query('SELECT id, name, email, role FROM users WHERE id = ?', [req.user.id]);
 
         if (rows.length === 0) {
             return res.status(401).json({ message: 'User not found' });
@@ -143,9 +168,82 @@ app.get('/api/me', async (req, res) => {
 
         res.json({ user: rows[0] });
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        res.status(500).json({ message: 'Server error' });
     }
 });
+
+// Generic CRUD helper
+const setupCRUD = (tableName, path) => {
+    app.get(`/api/${path}`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        try {
+            const [rows] = await pool.query(`SELECT * FROM ${tableName} ORDER BY created_at DESC`);
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ message: 'Failed to fetch data' });
+        }
+    });
+
+    app.post(`/api/${path}`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        try {
+            const id = uuidv4();
+            const fields = Object.keys(req.body);
+            const values = Object.values(req.body);
+            const placeholders = fields.map(() => '?').join(', ');
+
+            await pool.query(
+                `INSERT INTO ${tableName} (id, ${fields.join(', ')}) VALUES (?, ${placeholders})`,
+                [id, ...values]
+            );
+            res.status(201).json({ id, ...req.body });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Failed to create data' });
+        }
+    });
+
+    app.put(`/api/${path}/:id`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        try {
+            const modifiableData = { ...req.body };
+            delete modifiableData.id;
+            delete modifiableData.created_at;
+
+            const fields = Object.keys(modifiableData);
+            const values = Object.values(modifiableData);
+
+            if (fields.length === 0) {
+                return res.status(400).json({ message: 'No fields to update' });
+            }
+
+            const setClause = fields.map(f => `${f} = ?`).join(', ');
+
+            await pool.query(
+                `UPDATE ${tableName} SET ${setClause} WHERE id = ?`,
+                [...values, req.params.id]
+            );
+            res.json({ id: req.params.id, ...modifiableData });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Failed to update data' });
+        }
+    });
+
+    app.delete(`/api/${path}/:id`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        try {
+            await pool.query(`DELETE FROM ${tableName} WHERE id = ?`, [req.params.id]);
+            res.json({ message: 'Deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ message: 'Failed to delete data' });
+        }
+    });
+};
+
+setupCRUD('book_categories', 'book-categories');
+setupCRUD('book_types', 'book-types');
+setupCRUD('levels', 'levels');
+setupCRUD('classes', 'classes');
+setupCRUD('subjects', 'subjects');
+setupCRUD('curriculums', 'curriculums');
+setupCRUD('majors', 'majors');
 
 app.post('/api/logout', (req, res) => {
     res.clearCookie('token');

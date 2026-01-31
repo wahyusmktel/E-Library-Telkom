@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5050/api';
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     console.log(`[API Request] ${endpoint}`, options);
