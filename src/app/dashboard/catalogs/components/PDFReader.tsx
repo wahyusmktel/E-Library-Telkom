@@ -41,11 +41,49 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
     const [scale, setScale] = useState(1.0);
     const [loading, setLoading] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [readingTime, setReadingTime] = useState(0);
     const bookRef = useRef<any>(null);
+
+    // Persistence Key
+    const storageKey = `repo-read-pos-${fileUrl.split('/').pop()}`;
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
         setLoading(false);
+
+        // Restore progress
+        const savedPage = localStorage.getItem(storageKey);
+        if (savedPage) {
+            const pageNum = parseInt(savedPage);
+            if (!isNaN(pageNum) && pageNum > 0) {
+                setPageNumber(pageNum);
+            }
+        }
+    };
+
+    // Save progress whenever page changes
+    useEffect(() => {
+        if (pageNumber > 0) {
+            localStorage.setItem(storageKey, pageNumber.toString());
+        }
+    }, [pageNumber, storageKey]);
+
+    // Timer Logic
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setReadingTime(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return [h > 0 ? h : null, m, s]
+            .filter(x => x !== null)
+            .map(x => x.toString().padStart(2, '0'))
+            .join(':');
     };
 
     const handleZoomIn = () => setScale(prev => Math.min(prev + 0.2, 3.0));
@@ -63,6 +101,19 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
         }
     };
 
+    // Navigation Handlers for Mouse
+    const handleLeftClick = (e: React.MouseEvent) => {
+        // Only trigger if clicking on the book or container, not controls
+        if (e.button === 0) {
+            bookRef.current?.pageFlip()?.flipNext();
+        }
+    };
+
+    const handleRightClick = (e: React.MouseEvent) => {
+        e.preventDefault(); // Disable browser context menu
+        bookRef.current?.pageFlip()?.flipPrev();
+    };
+
     // Auto cleanup worker on unmount
     useEffect(() => {
         return () => {
@@ -73,7 +124,10 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
     }, [isFullscreen]);
 
     return (
-        <div className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col animate-in fade-in duration-500 overflow-hidden font-jakarta">
+        <div
+            className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col animate-in fade-in duration-500 overflow-hidden font-jakarta"
+            onContextMenu={handleRightClick}
+        >
             {/* Header / Toolbar */}
             <div className="h-20 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5 px-8 flex items-center justify-between z-10">
                 <div className="flex items-center gap-6">
@@ -86,7 +140,13 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
                     <div className="h-8 w-px bg-white/10"></div>
                     <div>
                         <h2 className="text-sm font-black text-white/90 tracking-tight line-clamp-1">{title}</h2>
-                        <p className="text-[10px] font-bold text-red-500 uppercase tracking-[0.2em] mt-0.5">Premium Reader Mode</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-[0.2em]">Premium Reader Mode</p>
+                            <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1">
+                                <Loader2 size={8} className="animate-spin" /> {formatTime(readingTime)}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -110,7 +170,10 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
             </div>
 
             {/* Reading Area */}
-            <div className="flex-1 relative flex justify-center bg-[#1a1a1a] p-4 md:p-10 overflow-auto custom-scrollbar items-start">
+            <div
+                className="flex-1 relative flex justify-center bg-[#1a1a1a] p-4 md:p-10 overflow-auto custom-scrollbar items-start cursor-pointer"
+                onClick={handleLeftClick}
+            >
                 <div className="min-h-full flex items-center justify-center py-10">
                     {loading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-50 bg-zinc-950">
@@ -176,13 +239,13 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
             <div className="h-24 bg-zinc-900/90 backdrop-blur-2xl border-t border-white/5 px-10 flex items-center justify-between z-10 shrink-0">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
+                        onClick={(e) => { e.stopPropagation(); bookRef.current?.pageFlip()?.flipPrev(); }}
                         className="w-14 h-14 bg-zinc-800 hover:bg-red-600 rounded-2xl flex items-center justify-center text-white transition-all shadow-xl group border border-white/5"
                     >
                         <ChevronLeft size={28} strokeWidth={3} className="group-active:-translate-x-1 transition-transform" />
                     </button>
                     <button
-                        onClick={() => bookRef.current?.pageFlip()?.flipNext()}
+                        onClick={(e) => { e.stopPropagation(); bookRef.current?.pageFlip()?.flipNext(); }}
                         className="w-14 h-14 bg-zinc-800 hover:bg-red-600 rounded-2xl flex items-center justify-center text-white transition-all shadow-xl group border border-white/5"
                     >
                         <ChevronRight size={28} strokeWidth={3} className="group-active:translate-x-1 transition-transform" />
