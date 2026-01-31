@@ -68,12 +68,20 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
         if (savedPageNum) {
             setPageNumber(savedPageNum);
             setShowResumePrompt(false);
+            // Use flipbook API to jump to page
+            setTimeout(() => {
+                bookRef.current?.pageFlip()?.turnToPage(savedPageNum - 1);
+            }, 100);
         }
     };
 
     const handleStartFresh = () => {
         setPageNumber(1);
         setShowResumePrompt(false);
+        // Ensure we are at page 0
+        setTimeout(() => {
+            bookRef.current?.pageFlip()?.turnToPage(0);
+        }, 100);
     };
 
     // Save progress whenever page changes
@@ -198,14 +206,14 @@ export default function PDFReader({ fileUrl, onClose, title }: PDFReaderProps) {
                     )}
 
                     {showResumePrompt && !loading && (
-                        <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-zinc-950/80 backdrop-blur-md animate-in fade-in zoom-in duration-300">
+                        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
                             <div className="max-w-sm w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl text-center space-y-6">
-                                <div className="w-20 h-20 bg-red-600/20 rounded-[2rem] flex items-center justify-center mx-auto text-red-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                <div className="w-16 h-16 bg-red-600/20 rounded-[1.5rem] flex items-center justify-center mx-auto text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-black text-white tracking-tight">Lanjutkan Membaca?</h3>
-                                    <p className="text-sm font-bold text-white/40 leading-relaxed">
+                                    <p className="text-sm font-bold text-white/40 leading-relaxed text-center px-4">
                                         Kamu terakhir membaca sampai <span className="text-white">Halaman {savedPageNum}</span>. Ingin lanjut dari sana?
                                     </p>
                                 </div>
