@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import {
     Plus,
     Search,
@@ -11,6 +12,7 @@ import {
     X,
     Save,
     Book,
+    BookOpen,
     ExternalLink,
     Image as ImageIcon,
     FileText,
@@ -364,6 +366,11 @@ function FileUpload({ label, accept, maxSize, type, onUpload, value, previewUrl:
 
 // --- Main Page ---
 
+const PDFReader = dynamic(() => import('./components/PDFReader'), {
+    ssr: false,
+    loading: () => null
+});
+
 export default function KatalogBukuPage() {
     const [books, setBooks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -371,6 +378,7 @@ export default function KatalogBukuPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBook, setEditingBook] = useState<any>(null);
     const [formData, setFormData] = useState<any>({});
+    const [readingBook, setReadingBook] = useState<any>(null);
 
     // Relational options
     const [options, setOptions] = useState<any>({
@@ -553,14 +561,13 @@ export default function KatalogBukuPage() {
                                 </div>
                                 <div className="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform">
                                     {book.file_url && (
-                                        <a
-                                            href={`http://localhost:5050${book.file_url}`}
-                                            target="_blank"
+                                        <button
+                                            onClick={() => setReadingBook(book)}
                                             className="w-full py-3 bg-red-600/90 backdrop-blur-md text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black transition-colors"
                                         >
-                                            <Download size={16} />
+                                            <BookOpen size={16} />
                                             Baca Sekarang
-                                        </a>
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -797,6 +804,14 @@ export default function KatalogBukuPage() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {readingBook && (
+                <PDFReader
+                    fileUrl={`http://localhost:5050${readingBook.file_url}`}
+                    onClose={() => setReadingBook(null)}
+                    title={readingBook.title}
+                />
             )}
         </div>
     );
