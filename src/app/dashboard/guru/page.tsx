@@ -62,19 +62,20 @@ export default function GuruPage() {
         setLoading(true);
         try {
             const query = new URLSearchParams({
-                page: pagination.page.toString(),
-                limit: pagination.limit.toString(),
-                q: search,
-                subject: filters.subject,
+                page: (pagination?.page || 1).toString(),
+                limit: (pagination?.limit || 10).toString(),
+                q: search || '',
+                subject: filters?.subject || '',
             }).toString();
 
             const res = await apiFetch(`/users/teachers?${query}`);
-            setData(res.data);
-            setPagination(prev => ({
-                ...prev,
-                total: res.pagination.total,
-                totalPages: res.pagination.totalPages
-            }));
+            setData(res.data || []);
+            if (res.pagination) {
+                setPagination(prev => ({
+                    ...prev,
+                    ...res.pagination
+                }));
+            }
         } catch (error) {
             console.error('Failed to fetch teachers', error);
             toast.error('Gagal mengambil data guru');
@@ -97,11 +98,15 @@ export default function GuruPage() {
     }, []);
 
     useEffect(() => {
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [search, filters]);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             fetchData();
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, pagination.page, filters]);
+    }, [pagination.page, search, filters]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();

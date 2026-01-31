@@ -68,21 +68,22 @@ export default function SiswaPage() {
         setLoading(true);
         try {
             const query = new URLSearchParams({
-                page: pagination.page.toString(),
-                limit: pagination.limit.toString(),
-                q: search,
-                level: filters.level,
-                classNames: filters.classNames,
-                major: filters.major
+                page: (pagination?.page || 1).toString(),
+                limit: (pagination?.limit || 10).toString(),
+                q: search || '',
+                level: filters?.level || '',
+                classNames: filters?.classNames || '',
+                major: filters?.major || ''
             }).toString();
 
             const res = await apiFetch(`/users/students?${query}`);
-            setData(res.data);
-            setPagination(prev => ({
-                ...prev,
-                total: res.pagination.total,
-                totalPages: res.pagination.totalPages
-            }));
+            setData(res.data || []);
+            if (res.pagination) {
+                setPagination(prev => ({
+                    ...prev,
+                    ...res.pagination
+                }));
+            }
         } catch (error) {
             console.error('Failed to fetch students', error);
             toast.error('Gagal mengambil data siswa');
@@ -109,11 +110,15 @@ export default function SiswaPage() {
     }, []);
 
     useEffect(() => {
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [search, filters]);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             fetchData();
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, pagination.page, filters]);
+    }, [pagination.page, search, filters]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -239,6 +244,14 @@ export default function SiswaPage() {
                         >
                             <option value="">Semua Kelas</option>
                             {refs.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        <select
+                            className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-[1.5rem] text-xs font-black uppercase tracking-widest focus:border-red-100 focus:bg-white transition-all appearance-none cursor-pointer"
+                            value={filters.major}
+                            onChange={(e) => setFilters({ ...filters, major: e.target.value })}
+                        >
+                            <option value="">Semua Jurusan</option>
+                            {refs.majors.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     </div>
                 </div>
