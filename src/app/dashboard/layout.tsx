@@ -18,7 +18,8 @@ import {
     Building2,
     Database,
     ChevronDown,
-    ChevronRight
+    ChevronRight,
+    Book
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const menuItems = [
         { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', role: 'all' },
+        { label: 'Katalog Buku', icon: Book, href: '/dashboard/catalogs', role: 'all' },
         { label: 'Siswa & Guru', icon: Users, href: '/dashboard/users', role: 'all' },
         { label: 'Materi Pembelajaran', icon: BookOpen, href: '/dashboard/materials', role: 'all' },
         { label: 'Ujian Online', icon: GraduationCap, href: '/dashboard/exams', role: 'all' },

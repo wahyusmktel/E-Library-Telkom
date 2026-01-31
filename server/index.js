@@ -5,6 +5,11 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -26,6 +31,43 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// Multer Configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const type = req.query.type === 'cover' ? 'covers' : 'books';
+        const dir = `public/uploads/${type}`;
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
+
+// Signed URL Helpers
+const SIGNED_URL_SECRET = process.env.JWT_SECRET || 'secret-key';
+function generateSignedUrl(filePath, expiresIn = '1h') {
+    const expires = Date.now() + (parseInt(expiresIn) * 3600 * 1000);
+    const signature = crypto.createHmac('sha256', SIGNED_URL_SECRET)
+        .update(`${filePath}${expires}`)
+        .digest('hex');
+    return `/api/files/view?path=${encodeURIComponent(filePath)}&expires=${expires}&signature=${signature}`;
+}
+
+function verifySignature(filePath, expires, signature) {
+    if (Date.now() > parseInt(expires)) return false;
+    const expectedSignature = crypto.createHmac('sha256', SIGNED_URL_SECRET)
+        .update(`${filePath}${expires}`)
+        .digest('hex');
+    return signature === expectedSignature;
+}
 
 let pool;
 
@@ -72,6 +114,38 @@ async function initDB() {
         await pool.query(`CREATE TABLE IF NOT EXISTS subjects (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await pool.query(`CREATE TABLE IF NOT EXISTS curriculums (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await pool.query(`CREATE TABLE IF NOT EXISTS majors (id CHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS book_catalogs (
+                id CHAR(36) PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                publisher VARCHAR(255),
+                isbn VARCHAR(50),
+                edition INT,
+                author VARCHAR(255),
+                category_id CHAR(36),
+                type_id CHAR(36),
+                level_id CHAR(36),
+                class_id CHAR(36),
+                subject_id CHAR(36),
+                curriculum_id CHAR(36),
+                major_id CHAR(36),
+                cover_path VARCHAR(255),
+                file_path VARCHAR(255),
+                upload_by CHAR(36),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL,
+                FOREIGN KEY (category_id) REFERENCES book_categories(id),
+                FOREIGN KEY (type_id) REFERENCES book_types(id),
+                FOREIGN KEY (level_id) REFERENCES levels(id),
+                FOREIGN KEY (class_id) REFERENCES classes(id),
+                FOREIGN KEY (subject_id) REFERENCES subjects(id),
+                FOREIGN KEY (curriculum_id) REFERENCES curriculums(id),
+                FOREIGN KEY (major_id) REFERENCES majors(id),
+                FOREIGN KEY (upload_by) REFERENCES users(id)
+            )
+        `);
 
         // Seed superadmin
         const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', ['superadmin@telkom.co.id']);
@@ -172,9 +246,119 @@ app.get('/api/me', verifyToken, async (req, res) => {
     }
 });
 
+// Signed URL File Viewing
+app.get('/api/files/view', (req, res) => {
+    const { path: filePath, expires, signature } = req.query;
+    if (!filePath || !expires || !signature) return res.status(400).json({ message: 'Missing parameters' });
+
+    if (!verifySignature(filePath, expires, signature)) {
+        return res.status(403).json({ message: 'Invalid or expired signature' });
+    }
+
+    const absolutePath = path.join(__dirname, filePath);
+    if (!fs.existsSync(absolutePath)) return res.status(404).json({ message: 'File not found' });
+
+    res.sendFile(absolutePath);
+});
+
+// Advanced Book Catalog Routes
+app.post('/api/books/upload', verifyToken, verifyRole(['superadmin']), upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    const relativePath = `public/uploads/${req.query.type === 'cover' ? 'covers' : 'books'}/${req.file.filename}`;
+    res.json({ path: relativePath });
+});
+
+app.post('/api/books/remote-download', verifyToken, verifyRole(['superadmin']), async (req, res) => {
+    const { url, type } = req.body;
+    if (!url) return res.status(400).json({ message: 'URL is required' });
+
+    try {
+        const response = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'stream'
+        });
+
+        const extension = path.extname(new URL(url).pathname) || (type === 'cover' ? '.jpg' : '.pdf');
+        const filename = `${Date.now()}-${uuidv4()}${extension}`;
+        const relativePath = `public/uploads/${type === 'cover' ? 'covers' : 'books'}/${filename}`;
+        const absolutePath = path.join(__dirname, relativePath);
+
+        const writer = fs.createWriteStream(absolutePath);
+        response.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+
+        res.json({ path: relativePath });
+    } catch (error) {
+        console.error('Remote download failed:', error);
+        res.status(500).json({ message: 'Remote download failed' });
+    }
+});
+
+app.get('/api/book-catalogs', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM book_catalogs WHERE deleted_at IS NULL ORDER BY created_at DESC');
+        // Generate signed URLs for each book
+        const books = rows.map(book => ({
+            ...book,
+            cover_url: book.cover_path ? generateSignedUrl(book.cover_path) : null,
+            file_url: book.file_path ? generateSignedUrl(book.file_path) : null
+        }));
+        res.json(books);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch books' });
+    }
+});
+
+app.post('/api/book-catalogs', verifyToken, verifyRole(['superadmin']), async (req, res) => {
+    const id = uuidv4();
+    const { title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path } = req.body;
+
+    try {
+        await pool.query(
+            `INSERT INTO book_catalogs (id, title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path, upload_by) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, title, publisher, isbn, edition, author, category_id, type_id, level_id, class_id, subject_id, curriculum_id, major_id, cover_path, file_path, req.user.id]
+        );
+        res.json({ message: 'Book catalog created', id });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to create book catalog' });
+    }
+});
+
+app.put('/api/book-catalogs/:id', verifyToken, verifyRole(['superadmin']), async (req, res) => {
+    const { id } = req.params;
+    const body = { ...req.body };
+    delete body.id;
+    delete body.created_at;
+    delete body.updated_at;
+    delete body.upload_by;
+
+    try {
+        await pool.query('UPDATE book_catalogs SET ? WHERE id = ?', [body, id]);
+        res.json({ message: 'Updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Update failed' });
+    }
+});
+
+app.delete('/api/book-catalogs/:id', verifyToken, verifyRole(['superadmin']), async (req, res) => {
+    try {
+        await pool.query('UPDATE book_catalogs SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Deleted successfully (soft-delete)' });
+    } catch (error) {
+        res.status(500).json({ message: 'Delete failed' });
+    }
+});
+
 // Generic CRUD helper
 const setupCRUD = (tableName, path) => {
-    app.get(`/api/${path}`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+    app.get(`/api/${path}`, verifyToken, async (req, res) => {
         try {
             const [rows] = await pool.query(`SELECT * FROM ${tableName} ORDER BY created_at DESC`);
             res.json(rows);
@@ -184,46 +368,32 @@ const setupCRUD = (tableName, path) => {
     });
 
     app.post(`/api/${path}`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        const id = uuidv4();
+        const data = { id, ...req.body };
         try {
-            const id = uuidv4();
-            const fields = Object.keys(req.body);
-            const values = Object.values(req.body);
-            const placeholders = fields.map(() => '?').join(', ');
-
-            await pool.query(
-                `INSERT INTO ${tableName} (id, ${fields.join(', ')}) VALUES (?, ${placeholders})`,
-                [id, ...values]
-            );
-            res.status(201).json({ id, ...req.body });
+            await pool.query(`INSERT INTO ${tableName} SET ?`, data);
+            res.json({ message: 'Created successfully', id });
         } catch (error) {
-            console.error(error);
             res.status(500).json({ message: 'Failed to create data' });
         }
     });
 
     app.put(`/api/${path}/:id`, verifyToken, verifyRole(['superadmin']), async (req, res) => {
+        const { id } = req.params;
+        const body = { ...req.body };
+        delete body.id;
+        delete body.created_at;
+
+        if (Object.keys(body).length === 0) {
+            return res.status(400).json({ message: 'No fields to update' });
+        }
+
         try {
-            const modifiableData = { ...req.body };
-            delete modifiableData.id;
-            delete modifiableData.created_at;
-
-            const fields = Object.keys(modifiableData);
-            const values = Object.values(modifiableData);
-
-            if (fields.length === 0) {
-                return res.status(400).json({ message: 'No fields to update' });
-            }
-
-            const setClause = fields.map(f => `${f} = ?`).join(', ');
-
-            await pool.query(
-                `UPDATE ${tableName} SET ${setClause} WHERE id = ?`,
-                [...values, req.params.id]
-            );
-            res.json({ id: req.params.id, ...modifiableData });
+            await pool.query(`UPDATE ${tableName} SET ? WHERE id = ?`, [body, id]);
+            res.json({ message: 'Updated successfully' });
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: 'Failed to update data' });
+            console.error(`[Error PUT ${path}]`, error);
+            res.status(500).json({ message: 'Update failed' });
         }
     });
 
